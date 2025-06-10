@@ -7,8 +7,24 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 
 ## 加载数据
-sensor_data = pd.read_excel(r"simData/sensorData.xlsx")
-require_data = pd.read_excel(r"simData/requireData.xlsx")
+print("数据加载开始...")
+sensor_data = None
+require_data = None
+try:
+    sensor_path = r"simData/sensorData.xlsx"
+    require_path = r"simData/requireData.xlsx"
+    sensor_data = pd.read_excel(sensor_path)
+    require_data = pd.read_excel(require_path)
+except FileNotFoundError as e:
+    print(f"文件未找到: {e}")
+except pd.errors.ParserError as e:
+    print(f"Excel 文件解析失败: {e}")
+except Exception as e:
+    print(f"发生未知错误: {e}")
+else:
+    print("数据加载成功")
+finally:
+    print("数据加载结束。")
 
 ## 参数设置
 num_radars = len(sensor_data)
