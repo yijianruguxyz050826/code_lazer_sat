@@ -1,10 +1,12 @@
 import pandas as pd
 import pulp
 from astropy.time import Time
+from matplotlib import pyplot as plt
 from poliastro.bodies import Earth
 from poliastro.twobody import Orbit
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+import scipy.io as sio
 
 ## 加载数据
 print("数据加载开始...")
@@ -98,3 +100,47 @@ else:
     print("参数设置成功")
 finally:
     print("参数设置结束")
+    
+## 观测弧段导入
+print("加载可见弧段时间数据...")
+try:
+    # 加载可用弧段数据
+    usable_arcs_path = r"simData/usableArcs.mat"
+    usable_arcs_data = sio.loadmat(usable_arcs_path)['usableArcs']
+
+    # 构建每个雷达-卫星对的可见弧段列表
+    radar_target_visibilities = []
+
+    for i in range(len(usable_arcs_data)):
+        sat_id = int(usable_arcs_data[i][0][0]) - 1  # 卫星索引从0开始
+        radar_id = int(usable_arcs_data[i][1][0]) - 1  # 雷达索引从0开始
+        arc_chain = usable_arcs_data[i][2]  # 弧段时间范围（列索引）
+        arc_durations = usable_arcs_data[i][3]  # 每个弧段时长（秒）
+
+        # 转换为起止时间戳（UTC 时间）
+        visible_windows = []
+        for j in range(arc_chain.shape[0]):
+            start_idx = arc_chain[j, 0] - 1  # MATLAB 是1-based索引
+            end_idx = arc_chain[j, 1] - 1
+            start_time_utc = Time(
+                f"{int(simDate[0, start_idx])}-{int(simDate[1, start_idx]):02d}-{int(simDate[2, start_idx]):02d}T"
+                f"{int(simDate[3, start_idx]):02d}:{int(simDate[4, start_idx]):02d}:{int(simDate[5, start_idx]):02d}",
+                format='isot', scale='utc'
+            )
+            end_time_utc = Time(
+                f"{int(simDate[0, end_idx])}-{int(simDate[1, end_idx]):02d}-{int(simDate[2, end_idx]):02d}T"
+                f"{int(simDate[3, end_idx]):02d}:{int(simDate[4, end_idx]):02d}:{int(simDate[5, end_idx]):02d}",
+                format='isot', scale='utc'
+            )
+            visible_windows.append((start_time_utc, end_time_utc, arc_durations[j, 0]))
+
+        radar_target_visibilities.append({
+            "radar_id": radar_id,
+            "sat_id": sat_id,
+            "visible_windows": visible_windows
+        })
+
+except Exception as e:
+    print(f"加载可见弧段失败: {e}")
+else:
+    print("可见弧段数据加载成功")
