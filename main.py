@@ -10,7 +10,7 @@ import math
 # 加载数据
 sensor_data = pd.read_excel(r"simData/sensorData.xlsx")
 require_data = pd.read_excel(r"simData/requireData.xlsx")
-print(sensor_data.columns)
+
 # 参数设置
 num_radars = len(sensor_data)
 num_targets = len(require_data)
@@ -20,11 +20,11 @@ dt_per_minute = 60 * u.s  # 每分钟的时间间隔
 
 def create_orbit_from_elements(row):
     a = row["半长轴（km)"] * u.km
-    ecc = row["偏心率"]
+    ecc = row["偏心率"] * u.one
     inc = row["轨道倾角(°)"] * u.deg
     raan = row["升交点赤经(°)"] * u.deg
-    argp = row["近地点幅角(°）"] * u.deg   # 注意这里用了全角括号 "°）"
-    nu = row["平近点角(°)"] * u.deg       # 假设这个列名是半角的，否则也要调整
+    argp = row["近地点幅角(°）"] * u.deg
+    nu = row["平近点角(°)"] * u.deg
 
     return Orbit.from_classical(Earth, a, ecc, inc, raan, argp, nu)
 
