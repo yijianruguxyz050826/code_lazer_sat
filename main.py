@@ -39,24 +39,21 @@ def radar_to_ecef(radar_row):
 
 def is_visible(radar_idx, target_idx, time_slot):
     orbit = orbits[target_idx]
-    obs_time = start_time + (time_slot * dt_per_minute)
 
-    # 获取目标在该时间的位置
-    r_target = orbit.propagate(obs_time).r.to(u.km)
+    # 使用时间偏移量（相对时间）
+    time_of_flight = time_slot * dt_per_minute  # dt_per_minute = 60 * u.s
 
-    # 获取雷达位置
-    r_radar = radar_positions[radar_idx]
-
-    # 计算距离
-    distance = np.linalg.norm((r_target - r_radar).value)
-
-    # 判断是否在最大探测范围内
-    max_distance = sensor_data.loc[radar_idx, "探测距离(km)"]
-    if distance > max_distance:
+    try:
+        r_target = orbit.propagate(time_of_flight).r.to(u.km)
+    except Exception as e:
+        print(f"轨道传播失败 at slot {time_slot}: {e}")
         return False
 
-    # TODO: 可进一步加入仰角、方位角判断（略复杂）
-    return True
+    r_radar = radar_positions[radar_idx]
+    distance = np.linalg.norm((r_target - r_radar).value)
+
+    max_distance = sensor_data.loc[radar_idx, "探测距离(km)"]
+    return distance <= max_distance
 
 orbits = [create_orbit_from_elements(require_data.iloc[i]) for i in range(num_targets)]
 radar_positions = [radar_to_ecef(sensor_data.iloc[i]) for i in range(num_radars)]
